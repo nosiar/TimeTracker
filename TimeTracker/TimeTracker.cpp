@@ -3,11 +3,12 @@
 
 #include "stdafx.h"
 #include "TimeTracker.h"
+#include "Database.h"
 
 #define MAX_LOADSTRING 100
 
 using namespace std;
-using tstring = basic_string < TCHAR >;
+using tstring = basic_string < TCHAR > ;
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -19,6 +20,9 @@ HWINEVENTHOOK hHook;
 mutex g_mutex;
 deque<tstring> program_list;
 tstring this_process_name;
+tstring foreground;
+tstring chrome_tab;
+chrono::system_clock::time_point start;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -36,41 +40,41 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPTSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	// TODO: Place code here.
-	MSG msg;
-	HACCEL hAccelTable;
+    // TODO: Place code here.
+    MSG msg;
+    HACCEL hAccelTable;
 
-	// Initialize global strings
-	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_TIMETRACKER, szWindowClass, MAX_LOADSTRING);
-	MyRegisterClass(hInstance);
+    // Initialize global strings
+    LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadString(hInstance, IDC_TIMETRACKER, szWindowClass, MAX_LOADSTRING);
+    MyRegisterClass(hInstance);
 
-	// Perform application initialization:
-	if (!InitInstance (hInstance, nCmdShow))
-	{
-		return FALSE;
-	}
+    // Perform application initialization:
+    if (!InitInstance(hInstance, nCmdShow))
+    {
+        return FALSE;
+    }
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TIMETRACKER));
+    hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TIMETRACKER));
 
     Hook();
 
-	// Main message loop:
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
+    // Main message loop:
+    while (GetMessage(&msg, NULL, 0, 0))
+    {
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
 
     Unhook();
 
-	return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 void Hook()
@@ -112,7 +116,11 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
             int n = p.find(_T('/'), 8);
             if (n != -1)
                 p.resize(n);
-            AddProcess(p);
+
+            if (chrome_tab != p)
+            {
+                chrome_tab = p;
+            }
         }
         pAcc->Release();
     }
@@ -123,9 +131,15 @@ void Run()
     for (;;)
     {
         auto process_name = GetProcessName(GetForegroundWindow());
-        if (process_name != _T("chrome.exe") && process_name != this_process_name)
+        if (process_name != this_process_name)
         {
-            AddProcess(process_name);
+            if (foreground != process_name)
+            {
+                foreground = process_name;
+                    auto end = chrono::system_clock::now();
+                    auto duration = chrono::duration_cast<chrono::seconds>(end - start).count();
+                    start = end;
+            }
         }
         this_thread::sleep_for(chrono::microseconds(50));
     }
@@ -157,9 +171,9 @@ tstring GetProcessName(HWND hWnd)
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-	WNDCLASSEX wcex;
+    WNDCLASSEX wcex;
 
-	wcex.cbSize = sizeof(WNDCLASSEX);
+    wcex.cbSize = sizeof(WNDCLASSEX);
 
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= WndProc;
@@ -173,7 +187,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-	return RegisterClassEx(&wcex);
+    return RegisterClassEx(&wcex);
 }
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
