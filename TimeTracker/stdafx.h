@@ -19,3 +19,14 @@
 
 
 // TODO: reference additional headers your program requires here
+#include <Psapi.h>
+#include <Objbase.h>
+#include <Oleacc.h>
+#include <thread>
+#include <deque>
+#include <chrono>
+#include <vector>
+#include <algorithm>
+#include <mutex>
+
+#pragma comment( lib,"Oleacc.lib")
