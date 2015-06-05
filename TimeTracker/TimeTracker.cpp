@@ -118,6 +118,19 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
     }
 }
 
+void Run()
+{
+    for (;;)
+    {
+        auto process_name = GetProcessName(GetForegroundWindow());
+        if (process_name != _T("chrome.exe") && process_name != this_process_name)
+        {
+            AddProcess(process_name);
+        }
+        this_thread::sleep_for(chrono::microseconds(50));
+    }
+}
+
 void AddProcess(tstring process_name)
 {
     lock_guard<mutex> lock(g_mutex);
@@ -214,6 +227,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message)
 	{
+    case WM_CREATE:
+        {
+            this_process_name = GetProcessName(hWnd);
+            thread t(Run);
+            t.detach();
+            break;
+        }
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);
