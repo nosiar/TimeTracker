@@ -3,55 +3,87 @@
 
 using namespace std;
 
-Database::Database() : is_open{ false }, db{ nullptr }
+Database::Database() : is_open{ false }, sqlite_db{ nullptr }, last_error{ 0 }, last_error_msg{ nullptr }
 {
 
 }
 
-int Database::open(const char* file_name)
+void Database::open()
 {
-    auto r = sqlite3_open(file_name, &db);
-    if (r == SQLITE_OK)
-    {
+    last_error = sqlite3_open("data.sqlite", &sqlite_db);
+    if (last_error == SQLITE_OK)
         is_open = true;
-    }
-    return r == SQLITE_OK;
 }
 
 void Database::close()
 {
     if (is_open)
-        sqlite3_close(db);
+        sqlite3_close(sqlite_db);
 }
 
-static int callback(void *, int argc, char**argv, char**azColName)
+int Database::callback(void *arg, int argc, char**argv, char**azColName)
 {
+    Database* db = (Database*)arg;
+    db->reader.size++;
     for (int i = 0; i < argc; ++i)
     {
-        auto x = argv[i];
-        auto y = azColName[i];
-        UNREFERENCED_PARAMETER(x);
-        UNREFERENCED_PARAMETER(y);
+        auto& v = db->reader.reader[azColName[i]];
+        v.push_back(argv[i]);
     }
     return 0;
 }
 
-int Database::create_table()
+void Database::exec(const char* sql)
 {
-    char* err = nullptr;
+    reader.clear();
+
+    if (last_error_msg != nullptr)
+        sqlite3_free(last_error_msg);
+
+    last_error = sqlite3_exec(sqlite_db, sql, callback, this, &last_error_msg);
+}
+
+void Database::create_table()
+{
     char* sql = "CREATE TABLE PROGRAM("  \
         "ID INTEGER PRIMARY KEY      AUTOINCREMENT," \
         "NAME           TEXT         NOT NULL," \
         "TIME           DATETIME     NOT NULL," \
         "DURATION       INT          NOT NULL);";
-    return sqlite3_exec(db, sql, callback, 0, &err);
+    exec(sql);
 }
 
-int Database::insert(char* name, char* datetime, int duration)
+void Database::insert(const char* name, const char* datetime, int duration)
 {
-    char* err = nullptr;
     char sql[1024];
     sprintf_s(sql, "INSERT INTO PROGRAM (NAME,TIME,DURATION) "  \
-                 "VALUES ('%s', '%s', %d );", name, datetime, duration);
-    return sqlite3_exec(db, sql, callback, 0, &err);
+        "VALUES ('%s', '%s', %d );", name, datetime, duration);
+    exec(sql);
+}
+
+const Reader& Database::select(const char* name)
+{
+    char sql[1024];
+    sprintf_s(sql, "SELECT * FROM PROGRAM WHERE NAME = '%s';", name);
+    exec(sql);
+    return reader;
+}
+
+void Reader::clear()
+{
+    reader.clear();
+    size = 0;
+    cur = -1;
+}
+
+bool Reader::read() const
+{
+    cur++;
+    return cur < size;
+}
+
+std::string Reader::get(const char* column) const
+{
+    auto& v = reader.at(column);
+    return v[cur];
 }
