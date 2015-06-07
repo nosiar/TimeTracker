@@ -32,7 +32,6 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 void Hook();
 void Unhook();
 void CALLBACK WinEventProc(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD);
-void AddProcess(tstring);
 void AddProcess(const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
 tstring GetProcessName(HWND);
 
@@ -234,18 +233,6 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
         db.insert(p, "", time, static_cast<int>(end_t - end_before_t));
 
         db.close();
-    }
-}
-
-void AddProcess(tstring process_name)
-{
-    lock_guard<mutex> lock(g_mutex);
-    if (program_list.empty() || program_list.back() != process_name)
-    {
-        if (program_list.size() >= 50)
-            program_list.pop_front();
-        program_list.push_back(process_name);
-        InvalidateRect(hWndThis, NULL, TRUE);
     }
 }
 
