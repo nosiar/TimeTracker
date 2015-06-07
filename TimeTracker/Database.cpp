@@ -62,10 +62,18 @@ void Database::insert(const char* name, const char* subname, const char* datetim
     exec(sql);
 }
 
-const Reader& Database::select(const char* name)
+void Database::update(const char* name, const char* subname, const char* datetime, int new_duration)
 {
     char sql[1024];
-    sprintf_s(sql, "SELECT * FROM PROGRAM WHERE NAME = '%s';", name);
+    sprintf_s(sql, "UPDATE PROGRAM set DURATION = %d "  \
+        "WHERE NAME = '%s' AND SUBNAME = '%s' AND TIME = '%s'; ", new_duration, name, subname, datetime);
+    exec(sql);
+}
+
+const Reader& Database::select(const char* name, const char* subname, const char* time)
+{
+    char sql[1024];
+    sprintf_s(sql, "SELECT * FROM PROGRAM WHERE NAME = '%s' AND SUBNAME = '%s' AND TIME = '%s';", name, subname, time);
     exec(sql);
     return reader;
 }

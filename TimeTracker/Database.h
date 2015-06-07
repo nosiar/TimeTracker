@@ -25,7 +25,8 @@ public:
     void close();
     void create_table();
     void insert(const char* name, const char* subname, const char* datetime, int duration);
-    const Reader& select(const char* name);
+    void update(const char* name, const char* subname, const char* datetime, int add_duration);
+    const Reader& select(const char* name, const char* subname, const char* time);
 private:
     void exec(const char* sql);
     static int Database::callback(void *, int argc, char**argv, char**azColName);
