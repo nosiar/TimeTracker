@@ -33,6 +33,7 @@ void Hook();
 void Unhook();
 void CALLBACK WinEventProc(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD);
 void AddProcess(tstring);
+void AddProcess(const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
 tstring GetProcessName(HWND);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
@@ -139,11 +140,9 @@ void Run()
                 if (foreground != process_name)
                 {
                     auto end = chrono::system_clock::now();
-                    auto duration = chrono::duration_cast<chrono::seconds>(end - start).count();
-                    UNREFERENCED_PARAMETER(duration);
-                    TCHAR temp[1024];
-                    _stprintf_s(temp, L"%s %s %d\n", foreground.c_str(), chrome_tab.c_str(), duration);
-                    OutputDebugString(temp);
+                    
+                    if (!foreground.empty())
+                        AddProcess(foreground, start, end);
 
                     foreground = process_name;
                     start = end;
@@ -164,6 +163,78 @@ std::string wstring_to_utf8(const std::wstring& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
     return conv.to_bytes(str);
+}
+
+void AddProcess(const tstring& process_name, chrono::system_clock::time_point start, chrono::system_clock::time_point end)
+{
+    time_t start_t = chrono::system_clock::to_time_t(start);
+    time_t end_t = chrono::system_clock::to_time_t(end);
+
+    tm start_tm;
+    tm end_tm;
+
+    localtime_s(&start_tm, &start_t);
+    localtime_s(&end_tm, &end_t);
+
+    /*end_tm.tm_hour += 3;
+    end_tm.tm_min += 33;
+    end_tm.tm_sec += 55;
+    end_t = mktime(&end_tm);*/
+
+    string p_ = wstring_to_utf8(process_name);
+    const char* p = p_.c_str();
+
+    char time[1024];
+
+    if (start_tm.tm_year == end_tm.tm_year && start_tm.tm_mon == end_tm.tm_mon && start_tm.tm_mday == end_tm.tm_mday && start_tm.tm_hour == end_tm.tm_hour)
+    {
+        start_tm.tm_min = 0;
+        start_tm.tm_sec = 0;
+        strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &start_tm);
+
+        Database db;
+        db.open();
+        db.insert(wstring_to_utf8(process_name).c_str(), "", time, static_cast<int>(end_t - start_t));
+        db.close();
+    }
+    else
+    {
+        tm start_before = start_tm;
+        start_before.tm_min = 0;
+        start_before.tm_sec = 0;
+
+        tm start_next = start_tm;
+        start_next.tm_hour++;
+        start_next.tm_min = 0;
+        start_next.tm_sec = 0;
+        time_t start_next_t = mktime(&start_next);
+
+        tm end_before = end_tm;
+        end_before.tm_min = 0;
+        end_before.tm_sec = 0;
+        time_t end_before_t = mktime(&end_before);
+
+
+        Database db;
+        db.open();
+
+        strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &start_before);
+        db.insert(p, "", time, static_cast<int>(start_next_t - start_t));
+
+        while (start_next_t != end_before_t)
+        {
+            strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &start_next);
+            db.insert(p, "", time, 3600);
+
+            start_next.tm_hour++;
+            start_next_t = mktime(&start_next);
+        }
+
+        strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &end_before);
+        db.insert(p, "", time, static_cast<int>(end_t - end_before_t));
+
+        db.close();
+    }
 }
 
 void AddProcess(tstring process_name)
