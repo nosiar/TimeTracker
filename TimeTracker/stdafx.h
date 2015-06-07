@@ -28,5 +28,6 @@
 #include <vector>
 #include <algorithm>
 #include <mutex>
+#include <codecvt>
 
 #pragma comment( lib,"Oleacc.lib")
