@@ -32,6 +32,7 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 void Hook();
 void Unhook();
 void CALLBACK WinEventProc(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD);
+void AddProcess(Database&, const char*, const char*, const char*, int);
 void AddProcess(const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
 tstring GetProcessName(HWND);
 
@@ -164,6 +165,16 @@ std::string wstring_to_utf8(const std::wstring& str)
     return conv.to_bytes(str);
 }
 
+// assum db opened
+void AddProcess(Database& db, const char* name, const char* subname, const char* time, int duration)
+{
+    const Reader& reader = db.select(name, subname, time);
+    if (reader.read())
+        db.update(name, subname, time, duration + stoi(reader.get("DURATION")));
+    else
+        db.insert(name, subname, time, duration);
+}
+
 void AddProcess(const tstring& process_name, chrono::system_clock::time_point start, chrono::system_clock::time_point end)
 {
     time_t start_t = chrono::system_clock::to_time_t(start);
@@ -175,10 +186,6 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
     localtime_s(&start_tm, &start_t);
     localtime_s(&end_tm, &end_t);
 
-    /*end_tm.tm_hour += 3;
-    end_tm.tm_min += 33;
-    end_tm.tm_sec += 55;
-    end_t = mktime(&end_tm);*/
 
     string p_ = wstring_to_utf8(process_name);
     const char* p = p_.c_str();
@@ -193,7 +200,7 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
 
         Database db;
         db.open();
-        db.insert(wstring_to_utf8(process_name).c_str(), "", time, static_cast<int>(end_t - start_t));
+        AddProcess(db, p, "", time, static_cast<int>(end_t - start_t));
         db.close();
     }
     else
@@ -218,19 +225,19 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
         db.open();
 
         strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &start_before);
-        db.insert(p, "", time, static_cast<int>(start_next_t - start_t));
+        AddProcess(db, p, "", time, static_cast<int>(start_next_t - start_t));
 
         while (start_next_t != end_before_t)
         {
             strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &start_next);
-            db.insert(p, "", time, 3600);
+            AddProcess(db, p, "", time, 3600);
 
             start_next.tm_hour++;
             start_next_t = mktime(&start_next);
         }
 
         strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", &end_before);
-        db.insert(p, "", time, static_cast<int>(end_t - end_before_t));
+        AddProcess(db, p, "", time, static_cast<int>(end_t - end_before_t));
 
         db.close();
     }
