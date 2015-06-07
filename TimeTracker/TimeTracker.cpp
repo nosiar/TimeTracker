@@ -316,6 +316,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
     case WM_CREATE:
         {
+            start = chrono::system_clock::now();
+
+            Database db;
+            db.open();
+            db.create_table();
+            db.close();
+
             this_process_name = GetProcessName(hWnd);
             thread t(Run);
             t.detach();
