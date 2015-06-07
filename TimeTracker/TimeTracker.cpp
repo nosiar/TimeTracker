@@ -130,15 +130,24 @@ void Run()
 {
     for (;;)
     {
-        auto process_name = GetProcessName(GetForegroundWindow());
-        if (process_name != this_process_name)
+        HWND hWnd = GetForegroundWindow();
+        if (hWnd != NULL)
         {
-            if (foreground != process_name)
+            auto process_name = GetProcessName(hWnd);
+            if (!process_name.empty() && process_name != this_process_name)
             {
-                foreground = process_name;
+                if (foreground != process_name)
+                {
                     auto end = chrono::system_clock::now();
                     auto duration = chrono::duration_cast<chrono::seconds>(end - start).count();
+                    UNREFERENCED_PARAMETER(duration);
+                    TCHAR temp[1024];
+                    _stprintf_s(temp, L"%s %s %d\n", foreground.c_str(), chrome_tab.c_str(), duration);
+                    OutputDebugString(temp);
+
+                    foreground = process_name;
                     start = end;
+                }
             }
         }
         this_thread::sleep_for(chrono::microseconds(50));
@@ -162,11 +171,17 @@ tstring GetProcessName(HWND hWnd)
     DWORD pid;
     GetWindowThreadProcessId(hWnd, &pid);
     HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
-    TCHAR szFileName[1024];
-    GetProcessImageFileName(h, szFileName, sizeof(szFileName) / sizeof(TCHAR));
-    tstring process_name = szFileName;
-    process_name = process_name.substr(process_name.rfind(_T('\\')) + 1);
-    return process_name;
+    if (h != NULL)
+    {
+        TCHAR szFileName[1024];
+        DWORD ret = GetProcessImageFileName(h, szFileName, sizeof(szFileName) / sizeof(TCHAR));
+        if (ret != 0)
+        {
+            tstring process_name = szFileName;
+            return process_name.substr(process_name.rfind(_T('\\')) + 1);
+        }
+    }
+    return L"";
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
