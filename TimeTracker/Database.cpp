@@ -24,7 +24,7 @@ void Database::close()
 int Database::callback(void *arg, int argc, char**argv, char**azColName)
 {
     Database* db = (Database*)arg;
-    db->reader.size++;
+    db->reader.size_++;
     for (int i = 0; i < argc; ++i)
     {
         auto& v = db->reader.reader[azColName[i]];
@@ -81,18 +81,18 @@ const Reader& Database::select(const char* name, const char* subname, const char
 void Reader::clear()
 {
     reader.clear();
-    size = 0;
-    cur = -1;
+    size_ = 0;
+    cur_ = -1;
 }
 
 bool Reader::read() const
 {
-    cur++;
-    return cur < size;
+    cur_++;
+    return cur_ < size_;
 }
 
 std::string Reader::get(const char* column) const
 {
     auto& v = reader.at(column);
-    return v[cur];
+    return v[cur_];
 }

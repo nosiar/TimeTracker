@@ -11,9 +11,10 @@ public:
     bool read() const;
     std::string get(const char* column) const;
     void clear();
+    int size() const { return size_; }
 private:
-    int size;
-    mutable int cur;
+    int size_;
+    mutable int cur_;
     std::map<std::string, std::vector<std::string>> reader;
 };
 
