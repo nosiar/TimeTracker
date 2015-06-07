@@ -48,16 +48,17 @@ void Database::create_table()
     char* sql = "CREATE TABLE PROGRAM("  \
         "ID INTEGER PRIMARY KEY      AUTOINCREMENT," \
         "NAME           TEXT         NOT NULL," \
+        "SUBNAME        TEXT," \
         "TIME           DATETIME     NOT NULL," \
         "DURATION       INT          NOT NULL);";
     exec(sql);
 }
 
-void Database::insert(const char* name, const char* datetime, int duration)
+void Database::insert(const char* name, const char* subname, const char* datetime, int duration)
 {
     char sql[1024];
-    sprintf_s(sql, "INSERT INTO PROGRAM (NAME,TIME,DURATION) "  \
-        "VALUES ('%s', '%s', %d );", name, datetime, duration);
+    sprintf_s(sql, "INSERT INTO PROGRAM (NAME,SUBNAME,TIME,DURATION) "  \
+        "VALUES ('%s', '%s', '%s', %d );", name, subname, datetime, duration);
     exec(sql);
 }
 
