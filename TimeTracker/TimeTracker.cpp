@@ -137,9 +137,14 @@ void Run()
                 if (foreground != process_name)
                 {
                     auto end = chrono::system_clock::now();
-                    
+
                     if (!foreground.empty())
-                        AddProcess(foreground, _T(""), start, end);
+                    {
+                        if (foreground == _T("chrome.exe"))
+                            AddProcess(foreground, chrome_tab, start, end);
+                        else
+                            AddProcess(foreground, _T(""), start, end);
+                    }
 
                     foreground = process_name;
                     start = end;
