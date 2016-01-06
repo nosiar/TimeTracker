@@ -31,7 +31,7 @@ void Hook();
 void Unhook();
 void CALLBACK WinEventProc(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD);
 void AddProcess(Database&, const char*, const char*, const char*, int);
-void AddProcess(const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
+void AddProcess(const tstring&, const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
 tstring GetProcessName(HWND);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
@@ -139,7 +139,7 @@ void Run()
                     auto end = chrono::system_clock::now();
                     
                     if (!foreground.empty())
-                        AddProcess(foreground, start, end);
+                        AddProcess(foreground, _T(""), start, end);
 
                     foreground = process_name;
                     start = end;
@@ -172,7 +172,7 @@ void AddProcess(Database& db, const char* name, const char* subname, const char*
         db.insert(name, subname, time, duration);
 }
 
-void AddProcess(const tstring& process_name, chrono::system_clock::time_point start, chrono::system_clock::time_point end)
+void AddProcess(const tstring& process_name, const tstring& subname, chrono::system_clock::time_point start, chrono::system_clock::time_point end)
 {
     time_t start_t = chrono::system_clock::to_time_t(start);
     time_t end_t = chrono::system_clock::to_time_t(end);
@@ -187,6 +187,9 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
     string p_ = wstring_to_utf8(process_name);
     const char* p = p_.c_str();
 
+    string s_ = wstring_to_utf8(subname);
+    const char* s = s_.c_str();
+
     char time[1024];
 
     if (start_tm.tm_year == end_tm.tm_year && start_tm.tm_mon == end_tm.tm_mon && start_tm.tm_mday == end_tm.tm_mday && start_tm.tm_hour == end_tm.tm_hour)
@@ -197,7 +200,7 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
 
         Database db;
         db.open();
-        AddProcess(db, p, "", time, static_cast<int>(end_t - start_t));
+        AddProcess(db, p, s, time, static_cast<int>(end_t - start_t));
         db.close();
     }
     else
@@ -222,19 +225,19 @@ void AddProcess(const tstring& process_name, chrono::system_clock::time_point st
         db.open();
 
         strftime(time, sizeof(time), TIME_FORMAT, &start_before);
-        AddProcess(db, p, "", time, static_cast<int>(start_next_t - start_t));
+        AddProcess(db, p, s, time, static_cast<int>(start_next_t - start_t));
 
         while (start_next_t != end_before_t)
         {
             strftime(time, sizeof(time), TIME_FORMAT, &start_next);
-            AddProcess(db, p, "", time, 3600);
+            AddProcess(db, p, s, time, 3600);
 
             start_next.tm_hour++;
             start_next_t = mktime(&start_next);
         }
 
         strftime(time, sizeof(time), TIME_FORMAT, &end_before);
-        AddProcess(db, p, "", time, static_cast<int>(end_t - end_before_t));
+        AddProcess(db, p, s, time, static_cast<int>(end_t - end_before_t));
 
         db.close();
     }
