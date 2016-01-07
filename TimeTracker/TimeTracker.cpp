@@ -46,6 +46,13 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+
+    HANDLE hMutex = CreateMutex(NULL, TRUE, _T("NOSIAR_TIMETRACKER"));
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        return 1;
+    }
+
     MSG msg;
     HACCEL hAccelTable;
 
@@ -75,6 +82,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     }
 
     Unhook();
+
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
 
     return (int)msg.wParam;
 }
