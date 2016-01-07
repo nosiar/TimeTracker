@@ -2,9 +2,11 @@
 #include "TimeTracker.h"
 #include "Database.h"
 #include <regex>
+#include <Shellapi.h>
 
 #define MAX_LOADSTRING 100
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+#define WM_USER_SHELLICON WM_USER + 1
 
 using namespace std;
 using tstring = basic_string < TCHAR > ;
@@ -290,6 +292,22 @@ tstring GetProcessName(HWND hWnd)
     return L"";
 }
 
+void minimize(bool value)
+{
+    NOTIFYICONDATA nid;
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = hWndThis;
+    nid.uID = IDI_TIMETRACKER;
+    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    _tcscpy_s(nid.szTip, szTitle);
+    nid.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_TIMETRACKER));
+    nid.uCallbackMessage = WM_USER_SHELLICON;
+
+    Shell_NotifyIcon(value ? NIM_ADD : NIM_DELETE, &nid);
+
+    ShowWindow(hWndThis, !value);
+}
+
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEX wcex;
@@ -311,7 +329,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassEx(&wcex);
 }
 
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+BOOL InitInstance(HINSTANCE hInstance, int /*nCmdShow*/)
 {
    hInst = hInstance; // Store instance handle in our global variable
 
@@ -323,8 +341,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   ShowWindow(hWndThis, nCmdShow);
-   UpdateWindow(hWndThis);
+   minimize(true);
 
    return TRUE;
 }
@@ -351,6 +368,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             t.detach();
             break;
         }
+    case WM_SYSCOMMAND:
+        if ((wParam & 0xFFF0) == SC_MINIMIZE)
+        {
+            minimize(true);
+            break;
+        }
+        else
+            return DefWindowProc(hWnd, message, wParam, lParam);
+    case WM_USER_SHELLICON:
+        if (LOWORD(lParam) == WM_LBUTTONDOWN)
+            minimize(false);
+        break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);
