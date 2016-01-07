@@ -20,6 +20,7 @@ deque<tstring> program_list;
 tstring this_process_name;
 tstring foreground;
 tstring chrome_tab;
+tstring chrome_tab_changed;
 chrono::system_clock::time_point start;
 
 // Forward declarations of functions included in this code module:
@@ -115,9 +116,9 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
             if (n != -1)
                 p.resize(n);
 
-            if (chrome_tab != p)
+            if (chrome_tab_changed != p)
             {
-                chrome_tab = p;
+                chrome_tab_changed = p;
             }
         }
         pAcc->Release();
@@ -147,6 +148,15 @@ void Run()
                     }
 
                     foreground = process_name;
+                    start = end;
+                }
+                else if (foreground == _T("chrome.exe") && chrome_tab != chrome_tab_changed)
+                {
+                    auto end = chrono::system_clock::now();
+
+                    AddProcess(foreground, chrome_tab, start, end);
+
+                    chrome_tab = chrome_tab_changed;
                     start = end;
                 }
             }
