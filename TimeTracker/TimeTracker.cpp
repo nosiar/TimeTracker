@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "TimeTracker.h"
 #include "Database.h"
+#include <regex>
 
 #define MAX_LOADSTRING 100
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
@@ -90,6 +91,13 @@ void Unhook()
     CoUninitialize();
 }
 
+bool is_valid_url(tstring url)
+{
+    tstring s = _T(R"pyapya(((https?|ftp):\/\/)?(([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)|localhost|([a-zA-Z0-9\-]+\.)*[a-zA-Z0-9\-]+\.(com|net|org|info|biz|gov|name|wiki|edu|[a-zA-Z][a-zA-Z]))(:[0-9]+)?((\/|\?)[^ "]*[^ ,;\.:">)])?)pyapya");
+
+    return regex_match(url, basic_regex<TCHAR>(s));
+}
+
 void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
 {
     UNREFERENCED_PARAMETER(hWinEventHook);
@@ -116,7 +124,7 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
             if (n != -1)
                 p.resize(n);
 
-            if (chrome_tab_changed != p)
+            if (chrome_tab_changed != p && is_valid_url(p))
             {
                 chrome_tab_changed = p;
             }
