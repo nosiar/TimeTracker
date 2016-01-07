@@ -120,7 +120,13 @@ void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, 
 
         if ((_tcscmp(szClassName, _T("Chrome_WidgetWin_1")) == 0) && (wcscmp(bstrName, L"Address and search bar") == 0 || wcscmp(bstrName, L"주소창 및 검색창") == 0)) {
             auto p = tstring(bstrValue);
-            int n = p.find(_T('/'), 8);
+            int n = p.find(_T("://"));
+            if (n != -1)
+                p = p.substr(n + 3);
+            n = p.find(_T('/'));
+            if (n != -1)
+                p.resize(n);
+            n = p.find(_T(':'));
             if (n != -1)
                 p.resize(n);
 
