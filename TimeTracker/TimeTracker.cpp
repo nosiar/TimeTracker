@@ -377,8 +377,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         else
             return DefWindowProc(hWnd, message, wParam, lParam);
     case WM_USER_SHELLICON:
-        if (LOWORD(lParam) == WM_LBUTTONDOWN)
+        switch (LOWORD(lParam))
+        {
+        case WM_LBUTTONDOWN:
             minimize(false);
+            break;
+        case WM_RBUTTONDOWN:
+            POINT p;
+            GetCursorPos(&p);
+            HMENU hPopMenu = CreatePopupMenu();
+            InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_ABOUT, _T("About"));
+            InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_EXIT, _T("Exit"));
+            SetForegroundWindow(hWnd);
+            TrackPopupMenu(hPopMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_BOTTOMALIGN,
+                p.x, p.y, 0, hWnd, NULL);
+            break;
+        }
         break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
