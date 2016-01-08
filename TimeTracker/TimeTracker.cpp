@@ -302,6 +302,22 @@ tstring GetProcessName(HWND hWnd)
     return L"";
 }
 
+void balloon()
+{
+    NOTIFYICONDATA nid;
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = hWndThis;
+    nid.uID = IDI_TIMETRACKER;
+    nid.uTimeout = 5000;
+    nid.uFlags = NIF_INFO;
+    nid.dwInfoFlags = NIIF_INFO;
+    _tcscpy_s(nid.szInfoTitle, _T("Time Tracker Is Running"));
+    _tcscpy_s(nid.szInfo, _T(" "));
+    nid.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_TIMETRACKER));
+
+    Shell_NotifyIcon(NIM_MODIFY, &nid);
+}
+
 void minimize(bool value)
 {
     NOTIFYICONDATA nid;
@@ -316,6 +332,9 @@ void minimize(bool value)
     Shell_NotifyIcon(value ? NIM_ADD : NIM_DELETE, &nid);
 
     ShowWindow(hWndThis, !value);
+
+    if (value)
+        balloon();
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
