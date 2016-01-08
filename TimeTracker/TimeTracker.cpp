@@ -37,6 +37,7 @@ void CALLBACK WinEventProc(HWINEVENTHOOK, DWORD, HWND, LONG, LONG, DWORD, DWORD)
 void AddProcess(Database&, const char*, const char*, const char*, int);
 void AddProcess(const tstring&, const tstring&, chrono::system_clock::time_point, chrono::system_clock::time_point);
 tstring GetProcessName(HWND);
+void balloon(HWND hWnd);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -46,19 +47,21 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-
-    HANDLE hMutex = CreateMutex(NULL, TRUE, _T("NOSIAR_TIMETRACKER"));
-    if (GetLastError() == ERROR_ALREADY_EXISTS)
-    {
-        return 1;
-    }
-
     MSG msg;
     HACCEL hAccelTable;
 
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadString(hInstance, IDC_TIMETRACKER, szWindowClass, MAX_LOADSTRING);
+
+    HANDLE hMutex = CreateMutex(NULL, TRUE, _T("NOSIAR_TIMETRACKER"));
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        HWND hWnd = FindWindow(szWindowClass, NULL);
+        balloon(hWnd);
+        return 1;
+    }
+
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
@@ -302,11 +305,11 @@ tstring GetProcessName(HWND hWnd)
     return L"";
 }
 
-void balloon()
+void balloon(HWND hWnd)
 {
     NOTIFYICONDATA nid;
     nid.cbSize = sizeof(NOTIFYICONDATA);
-    nid.hWnd = hWndThis;
+    nid.hWnd = hWnd;
     nid.uID = IDI_TIMETRACKER;
     nid.uTimeout = 5000;
     nid.uFlags = NIF_INFO;
@@ -334,7 +337,7 @@ void minimize(bool value)
     ShowWindow(hWndThis, !value);
 
     if (value)
-        balloon();
+        balloon(hWndThis);
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
