@@ -296,6 +296,9 @@ tstring GetProcessName(HWND hWnd)
     {
         TCHAR szFileName[1024];
         DWORD ret = GetProcessImageFileName(h, szFileName, sizeof(szFileName) / sizeof(TCHAR));
+
+        CloseHandle(h);
+
         if (ret != 0)
         {
             tstring process_name = szFileName;
