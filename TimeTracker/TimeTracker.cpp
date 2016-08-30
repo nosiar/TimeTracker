@@ -24,7 +24,7 @@ tstring this_process_name;
 tstring foreground;
 tstring chrome_tab;
 tstring chrome_tab_changed;
-chrono::system_clock::time_point start;
+chrono::system_clock::time_point g_start;
 
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance);
@@ -171,22 +171,22 @@ void Run()
                     if (!foreground.empty())
                     {
                         if (foreground == _T("chrome.exe"))
-                            AddProcess(foreground, chrome_tab, start, end);
+                            AddProcess(foreground, chrome_tab, g_start, end);
                         else
-                            AddProcess(foreground, _T(""), start, end);
+                            AddProcess(foreground, _T(""), g_start, end);
                     }
 
                     foreground = process_name;
-                    start = end;
+					g_start = end;
                 }
                 else if (foreground == _T("chrome.exe") && chrome_tab != chrome_tab_changed)
                 {
                     auto end = chrono::system_clock::now();
 
-                    AddProcess(foreground, chrome_tab, start, end);
+                    AddProcess(foreground, chrome_tab, g_start, end);
 
                     chrome_tab = chrome_tab_changed;
-                    start = end;
+					g_start = end;
                 }
             }
         }
@@ -391,7 +391,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
         {
-            start = chrono::system_clock::now();
+            g_start = chrono::system_clock::now();
 
             Database db;
             db.open();
